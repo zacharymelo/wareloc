@@ -1,0 +1,95 @@
+# Copyright (C) 2026 Zachary Melo
+#
+# Wareloc module language file
+#
+
+# Module
+Module530000Name = Wareloc
+Module530000Desc = Configurable sub-warehouse location hierarchy for products (Row, Bay, Shelf, Bin)
+
+# Menu
+WarelocMenu = Warehouse Locations
+ProductLocationList = Product Locations
+NewProductLocation = New Placement
+
+# Object labels
+ProductLocation = Product Location
+ProductLocations = Product Locations
+LinkToProductLocation = Link to Product Location
+
+# Card / form
+Product = Product
+Warehouse = Warehouse
+Quantity = Quantity
+IsDefault = Default Location
+LocationPath = Location
+Reception = Reception
+BackToList = Back to list
+
+# Location levels
+LocationLevels = Location Levels
+LevelPosition = Position
+LevelCode = Code
+LevelLabel = Label
+LevelDatatype = Data Type
+LevelListValues = Allowed Values
+LevelRequired = Required
+AddLevel = Add Level
+EditLevel = Edit Level
+DeleteLevel = Delete Level
+MoveLevelUp = Move Up
+MoveLevelDown = Move Down
+DatatypeFreetext = Free Text
+DatatypeInteger = Number
+DatatypeList = Predefined List
+MaxLevelsReached = Maximum of 6 hierarchy levels reached
+ConfirmDeleteLevel = Are you sure you want to deactivate this level? Existing location data will be preserved.
+LevelDeactivated = Level deactivated
+LevelAdded = Level added
+LevelUpdated = Level updated
+LevelMoved = Level position updated
+NoLevelsConfigured = No location levels configured. Go to the setup page to define your warehouse hierarchy.
+
+# Default location (product card hook)
+DefaultLocation = Default Location
+DefaultLocations = Default Locations
+DefaultLocationDesc = Default sub-warehouse location for this product when received
+AddWarehouseDefault = Add Warehouse Default
+NoDefaultLocation = No default location set
+
+# Reception hook
+LocationAtReception = Storage Location
+LocationAtReceptionDesc = Where this product will be stored in the warehouse
+
+# Status
+StatusDraft = Draft
+StatusActive = Active
+StatusMoved = Moved
+StatusCancelled = Cancelled
+
+# Admin setup
+WarelocSetup = Wareloc Setup
+HierarchyConfig = Location Hierarchy Configuration
+HierarchyConfigDesc = Define the levels of your warehouse location hierarchy. Level 1 is the broadest (e.g., Row), and each subsequent level is more specific (e.g., Bay, Shelf, Bin). Maximum 6 levels.
+GeneralSettings = General Settings
+AutoAssignOnReception = Auto-assign location on reception
+AutoAssignOnReceptionDesc = Automatically create a product location record when a reception is validated, using either the location specified on the reception or the product's default location
+DefaultStatusOnReception = Default status for auto-assigned locations
+NumberingModel = Numbering Model
+DebugMode = Debug Mode
+DebugModeDesc = When enabled, exposes a diagnostic endpoint at /custom/wareloc/ajax/debug.php for troubleshooting module configuration.
+
+# Permissions
+Permission530001a = Read product location records
+Permission530002a = Create/edit product location records
+Permission530003a = Delete product location records
+Permission530004a = Validate product location records
+Permission530005a = Configure wareloc module settings
+
+# Tab on product card
+LocationsTab = Locations
+
+# Misc
+RecordSaved = Record saved
+SetupSaved = Setup saved
+Confirm = Confirm
