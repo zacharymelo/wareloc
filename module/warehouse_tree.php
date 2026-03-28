@@ -340,11 +340,12 @@ print '<style>
 // ---- JS ----
 $js_confirm_deactivate = dol_escape_js($langs->trans('ConfirmDeactivateNode'));
 $js_rename_prompt      = dol_escape_js($langs->trans('RenamePrompt'));
+$js_add_label          = dol_escape_js($langs->trans('AddLabel'));
 
 print '<script>
 function warelocShowBulkAdd(nodeId, parentRef, childLabel) {
 	document.getElementById("bulkadd-fk-node").value = nodeId;
-	document.getElementById("bulkadd-label").textContent = "'.$langs->trans('AddLabel').'".replace("%s", childLabel).replace("%p", parentRef);
+	document.getElementById("bulkadd-label").textContent = "'.$js_add_label.'".replace("%s", childLabel).replace("%p", parentRef);
 	var form = document.getElementById("wareloc-bulkadd-form");
 	form.style.display = "inline-flex";
 	var node = document.getElementById("wareloc-node-" + nodeId);
