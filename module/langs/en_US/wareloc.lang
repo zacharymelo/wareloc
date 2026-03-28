@@ -57,6 +57,11 @@ QuickBuildNeedsLevelNames = No level names defined for this warehouse yet. <a hr
 # Node actions
 AddChildToRoot = Add child to root
 AddChildNode = Add %s
+AddLabel = Add %s to: %p
+BulkAddTitle = Add %s nodes here
+BulkAddDone = %s child nodes added successfully.
+BulkAddFailed = Failed to add child nodes. No records were saved.
+RenamePrompt = Enter new reference:
 NodeRenamed = Node renamed successfully.
 ChildAdded = Child node added.
 NodeDeactivated = Node deactivated.
