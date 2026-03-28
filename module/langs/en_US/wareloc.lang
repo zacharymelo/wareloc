@@ -50,6 +50,24 @@ LevelUpdated = Level updated
 LevelMoved = Level position updated
 NoLevelsConfigured = No location levels configured. Go to the setup page to define your warehouse hierarchy.
 
+# Level field tooltips
+LevelPositionDesc = Defines the hierarchy order from broadest to most specific (e.g. Row → Shelf → Bin). Position 1 is the outermost level.
+LevelCodeDesc = Short internal identifier, alphanumeric with no spaces (e.g. row, bay, shelf). Used internally to reference this level.
+LevelLabelDesc = Human-readable name shown on forms and lists (e.g. Row, Bay, Shelf).
+LevelDatatypeDesc = Controls what input is accepted: Free Text (anything), Number (integers only), or Predefined List (user must choose from values you define).
+LevelListValuesDesc = When type is Predefined List, define the allowed values using the editor. Each value is one row; values are stored as a comma-separated list.
+LevelRequiredDesc = When checked, a value for this level must be provided before a placement record can be saved.
+
+# List builder UI
+EditListValues = Edit values
+AddListValue = + Add value
+ApplyListValues = Apply
+NoListValues = No values defined
+
+# Warehouse selector
+WarehouseSelectorDesc = Select Global Default to configure levels used by all warehouses. Select a specific warehouse to create a custom hierarchy that overrides the global default for that warehouse only.
+WarehouseOverrideHint = Warehouses marked with * have their own custom level hierarchy.
+
 # Default location (product card hook)
 DefaultLocation = Default Location
 DefaultLocations = Default Locations
@@ -75,6 +93,7 @@ GeneralSettings = General Settings
 AutoAssignOnReception = Auto-assign location on reception
 AutoAssignOnReceptionDesc = Automatically create a product location record when a reception is validated, using either the location specified on the reception or the product's default location
 DefaultStatusOnReception = Default status for auto-assigned locations
+DefaultStatusOnReceptionDesc = Status applied to location records automatically created when a reception is validated. Draft = created but not yet active; Active = immediately confirmed.
 NumberingModel = Numbering Model
 DebugMode = Debug Mode
 DebugModeDesc = When enabled, exposes a diagnostic endpoint at /custom/wareloc/ajax/debug.php for troubleshooting module configuration.
@@ -88,6 +107,13 @@ Permission530005a = Configure wareloc module settings
 
 # Tab on product card
 LocationsTab = Locations
+
+# Per-warehouse level overrides
+GlobalDefault = Global Default
+InitFromGlobal = Initialize from Global Defaults
+ConfirmInitFromGlobal = Copy all global hierarchy levels to this warehouse? You can then customize them individually.
+WarehouseUsesGlobal = This warehouse uses the global default hierarchy.
+LevelsInitialized = Levels copied from global defaults. You can now customize them for this warehouse.
 
 # Misc
 RecordSaved = Record saved

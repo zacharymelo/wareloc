@@ -53,8 +53,9 @@ if ($id > 0) {
 	$id = $object->id;
 }
 
-// Load active levels
-$levels = wareloc_get_active_levels();
+// Load active levels (warehouse-aware: use object's warehouse if known, else global)
+$wh_for_levels = ($object->id > 0 && $object->fk_entrepot > 0) ? $object->fk_entrepot : 0;
+$levels = wareloc_get_active_levels(null, $wh_for_levels);
 
 // ---- ACTIONS ----
 
@@ -224,7 +225,8 @@ if ($action === 'create') {
 	$formproduct->selectWarehouses($preselected_wh, 'fk_entrepot', '', 1);
 	print '</td></tr>';
 
-	// Location levels
+	// Location levels (dynamic — reloaded via AJAX when warehouse changes)
+	print '<tbody id="wareloc_level_fields">';
 	if (!empty($levels)) {
 		$values = array();
 		for ($i = 1; $i <= 6; $i++) {
@@ -234,6 +236,7 @@ if ($action === 'create') {
 	} else {
 		print '<tr><td colspan="2"><div class="warning">'.$langs->trans('NoLevelsConfigured').'</div></td></tr>';
 	}
+	print '</tbody>';
 
 	// Quantity
 	print '<tr><td>'.$langs->trans('Quantity').'</td><td>';
@@ -263,6 +266,19 @@ if ($action === 'create') {
 	print '</div>';
 
 	print '</form>';
+
+	// JS: reload level fields when warehouse changes on create form
+	$ajax_url = dol_buildpath('/wareloc/ajax/getlevelfields.php', 1);
+	print '<script>
+	$(document).ready(function() {
+		$("select[name=fk_entrepot]").on("change", function() {
+			var wh = $(this).val();
+			$.get("'.dol_escape_js($ajax_url).'", {fk_entrepot: wh, prefix: "wareloc", mode: "edit"}, function(html) {
+				$("#wareloc_level_fields").html(html);
+			});
+		});
+	});
+	</script>';
 
 } elseif ($object->id > 0) {
 

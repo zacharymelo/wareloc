@@ -216,7 +216,8 @@ class ActionsWareloc
 						} else {
 							$wh_label = '#'.$def['fk_entrepot'];
 						}
-						$loc_label = wareloc_build_location_label($def, $levels);
+						$wh_levels = wareloc_get_active_levels(null, $def['fk_entrepot']);
+						$loc_label = wareloc_build_location_label($def, $wh_levels);
 						$html .= '<div class="margintoponly">';
 						$html .= '<strong>'.dol_escape_htmltag($wh_label).':</strong> ';
 						$html .= ($loc_label ? $loc_label : '<span class="opacitymedium">'.$langs->trans('NoDefaultLocation').'</span>');
@@ -239,7 +240,13 @@ class ActionsWareloc
 			$langs->load('wareloc@wareloc');
 			dol_include_once('/wareloc/lib/wareloc.lib.php');
 
-			$levels = wareloc_get_active_levels();
+			// Get the warehouse from the reception if set
+			$warehouse_id = 0;
+			if (!empty($object->fk_entrepot) && $object->fk_entrepot > 0) {
+				$warehouse_id = $object->fk_entrepot;
+			}
+
+			$levels = wareloc_get_active_levels(null, $warehouse_id);
 			if (empty($levels)) {
 				return 0;
 			}
@@ -250,12 +257,6 @@ class ActionsWareloc
 			$html .= '<strong>'.$langs->trans('LocationAtReception').'</strong>';
 			$html .= ' <span class="opacitymedium small">('.$langs->trans('LocationAtReceptionDesc').')</span>';
 			$html .= '</td></tr>';
-
-			// Get the warehouse from the reception if set
-			$warehouse_id = 0;
-			if (!empty($object->fk_entrepot) && $object->fk_entrepot > 0) {
-				$warehouse_id = $object->fk_entrepot;
-			}
 
 			// Try to pre-fill from session if returning after a save
 			$session_key = 'wareloc_reception_'.$object->id;

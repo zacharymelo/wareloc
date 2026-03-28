@@ -35,7 +35,7 @@ class modWareloc extends DolibarrModules
 		$this->description = 'Configurable sub-warehouse location hierarchy for products (Row, Bay, Shelf, Bin)';
 		$this->descriptionlong = 'Extends the native warehouse module with configurable location levels. Define hierarchy layers (Row, Bay, Shelf, Bin) with custom data types, set default locations on products, and assign precise locations during reception.';
 		$this->editor_name = 'Zachary Melo';
-		$this->version = '1.0.0';
+		$this->version = '1.2.0';
 		$this->const_name = 'MAIN_MODULE_'.strtoupper($this->name);
 		$this->picto = 'stock';
 
@@ -169,6 +169,22 @@ class modWareloc extends DolibarrModules
 			'perms'    => '$user->hasRight("wareloc", "productlocation", "write")',
 			'target'   => '',
 			'user'     => 0,
+		);
+
+		// Left: Location Hierarchy Config under Products > Warehouses
+		$this->menu[$r++] = array(
+			'fk_menu'  => 'fk_mainmenu=products,fk_leftmenu=stock',
+			'type'     => 'left',
+			'titre'    => 'HierarchyConfig',
+			'mainmenu' => 'products',
+			'leftmenu' => 'wareloc_hierarchy_config',
+			'url'      => '/wareloc/admin/setup.php',
+			'langs'    => 'wareloc@wareloc',
+			'position' => 200,
+			'enabled'  => 'isModEnabled("wareloc")',
+			'perms'    => '$user->admin',
+			'target'   => '',
+			'user'     => 2,
 		);
 	}
 

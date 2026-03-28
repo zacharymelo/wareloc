@@ -63,12 +63,16 @@ function wareloc_admin_prepare_head()
 }
 
 /**
- * Get active location hierarchy levels for current entity
+ * Get active location hierarchy levels for current entity, optionally scoped to a warehouse.
  *
- * @param  DoliDB $db  Database handler (if null, uses global)
- * @return array       Array of level objects ordered by position, each with: rowid, position, code, label, datatype, list_values, required
+ * Uses complete replacement: if the warehouse has ANY custom levels, those are its
+ * entire hierarchy. Otherwise falls back to global defaults (fk_entrepot IS NULL).
+ *
+ * @param  DoliDB $db            Database handler (if null, uses global)
+ * @param  int    $fk_entrepot   Warehouse ID (0 = global defaults only)
+ * @return array                 Array of level objects ordered by position
  */
-function wareloc_get_active_levels($db = null)
+function wareloc_get_active_levels($db = null, $fk_entrepot = 0)
 {
 	global $conf;
 	if ($db === null) {
@@ -77,9 +81,32 @@ function wareloc_get_active_levels($db = null)
 
 	$levels = array();
 
+	// Try warehouse-specific levels first
+	if ($fk_entrepot > 0) {
+		$sql = "SELECT rowid, position, code, label, datatype, list_values, required";
+		$sql .= " FROM ".MAIN_DB_PREFIX."wareloc_level";
+		$sql .= " WHERE active = 1";
+		$sql .= " AND fk_entrepot = ".((int) $fk_entrepot);
+		$sql .= " AND entity IN (".getEntity('wareloc_level').")";
+		$sql .= " ORDER BY position ASC";
+
+		$resql = $db->query($sql);
+		if ($resql) {
+			while ($obj = $db->fetch_object($resql)) {
+				$levels[] = $obj;
+			}
+			$db->free($resql);
+		}
+		if (!empty($levels)) {
+			return $levels;
+		}
+	}
+
+	// Fall back to global defaults
 	$sql = "SELECT rowid, position, code, label, datatype, list_values, required";
 	$sql .= " FROM ".MAIN_DB_PREFIX."wareloc_level";
 	$sql .= " WHERE active = 1";
+	$sql .= " AND fk_entrepot IS NULL";
 	$sql .= " AND entity IN (".getEntity('wareloc_level').")";
 	$sql .= " ORDER BY position ASC";
 
@@ -92,6 +119,37 @@ function wareloc_get_active_levels($db = null)
 	}
 
 	return $levels;
+}
+
+/**
+ * Check if a warehouse has its own level overrides
+ *
+ * @param  int    $fk_entrepot  Warehouse ID
+ * @param  DoliDB $db           Database handler (if null, uses global)
+ * @return bool                 True if warehouse has custom levels
+ */
+function wareloc_warehouse_has_overrides($fk_entrepot, $db = null)
+{
+	global $conf;
+	if ($db === null) {
+		global $db;
+	}
+
+	if ($fk_entrepot <= 0) {
+		return false;
+	}
+
+	$sql = "SELECT COUNT(rowid) as cnt FROM ".MAIN_DB_PREFIX."wareloc_level";
+	$sql .= " WHERE active = 1";
+	$sql .= " AND fk_entrepot = ".((int) $fk_entrepot);
+	$sql .= " AND entity IN (".getEntity('wareloc_level').")";
+
+	$resql = $db->query($sql);
+	if ($resql) {
+		$obj = $db->fetch_object($resql);
+		return ((int) $obj->cnt) > 0;
+	}
+	return false;
 }
 
 /**

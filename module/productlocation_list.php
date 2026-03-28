@@ -55,8 +55,8 @@ if (GETPOST('button_removefilter_x', 'alpha') || GETPOST('button_removefilter', 
 	$fk_product_filter = 0;
 }
 
-// Load active levels for dynamic column headers
-$levels = wareloc_get_active_levels();
+// Load active levels for dynamic column headers (warehouse-filtered when searching a specific warehouse)
+$levels = wareloc_get_active_levels(null, $search_warehouse > 0 ? $search_warehouse : 0);
 
 // ---- BUILD SQL ----
 

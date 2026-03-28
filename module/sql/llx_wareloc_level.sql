@@ -6,6 +6,7 @@
 CREATE TABLE llx_wareloc_level(
     rowid           INTEGER       AUTO_INCREMENT PRIMARY KEY,
     entity          INTEGER       NOT NULL DEFAULT 1,
+    fk_entrepot     INTEGER       DEFAULT NULL,
     position        SMALLINT      NOT NULL,
     code            VARCHAR(30)   NOT NULL,
     label           VARCHAR(128)  NOT NULL,

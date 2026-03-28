@@ -688,6 +688,7 @@ class ProductLocation extends CommonObject
 			$vals['level_'.$i] = $this->{'level_'.$i};
 		}
 
-		return wareloc_build_location_label($vals);
+		$levels = wareloc_get_active_levels(null, $this->fk_entrepot);
+		return wareloc_build_location_label($vals, $levels);
 	}
 }

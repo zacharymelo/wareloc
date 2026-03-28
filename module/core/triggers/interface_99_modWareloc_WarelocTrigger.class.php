@@ -25,7 +25,7 @@ class InterfaceWarelocTrigger extends DolibarrTriggers
 		$this->name = preg_replace('/^Interface/i', '', get_class($this));
 		$this->family = 'product';
 		$this->description = 'Triggers for wareloc module';
-		$this->version = '1.0.0';
+		$this->version = '1.2.0';
 		$this->picto = 'stock';
 	}
 
@@ -117,11 +117,6 @@ class InterfaceWarelocTrigger extends DolibarrTriggers
 		dol_include_once('/wareloc/class/productlocation.class.php');
 		dol_include_once('/wareloc/lib/wareloc.lib.php');
 
-		$levels = wareloc_get_active_levels();
-		if (empty($levels)) {
-			return;
-		}
-
 		$default_status = getDolGlobalInt('WARELOC_DEFAULT_STATUS_ON_RECEPTION', 1);
 
 		// Retrieve location data from session (set by our hook's doActions)
@@ -135,6 +130,11 @@ class InterfaceWarelocTrigger extends DolibarrTriggers
 		}
 
 		if ($warehouse_id <= 0) {
+			return;
+		}
+
+		$levels = wareloc_get_active_levels(null, $warehouse_id);
+		if (empty($levels)) {
 			return;
 		}
 
