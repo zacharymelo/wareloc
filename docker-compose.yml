@@ -36,7 +36,7 @@ services:
     volumes:
       - dolibarr_html:/var/www/html
       - dolibarr_docs:/var/www/documents
-      - ./module:/var/www/html/custom/wareloc
+      - ./module:/var/www/html/custom/binloc
 
 volumes:
   db_data:

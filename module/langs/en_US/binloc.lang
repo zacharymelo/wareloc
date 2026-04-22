@@ -1,0 +1,123 @@
+# Binloc — Warehouse Bin Location Tracker
+# Copyright (C) 2026 Zachary Melo
+
+#
+# Module
+#
+Module530100Name = Bin Locations
+Module530100Desc = Track product locations within warehouses using configurable bin/shelf/row levels
+
+#
+# Admin / Setup
+#
+BinlocSetup = Bin Locations Setup
+WarehouseLevels = Warehouse Levels
+BinLocations = Bin Locations
+BulkBinAssign = Bulk Bin Assignment
+
+#
+# Level configuration
+#
+Level = Level
+LevelLabel = Level Name
+AddLevel = Add Level
+RemoveLevel = Remove
+MaxLevelsReached = Maximum of 6 levels reached
+ConfigureLevels = Configure Levels
+LevelsSaved = Level configuration saved
+CopyFromWarehouse = Copy from warehouse
+CopyLevels = Copy Levels
+CopyLevelsDone = Level configuration copied
+NoLevelsConfigured = No levels configured for this warehouse. Configure levels to start tracking product locations.
+SelectWarehouse = Select a warehouse
+WarehouseRequired = Please select a warehouse
+
+#
+# Level placeholder hints
+#
+LevelHint1 = e.g. Row, Zone, Aisle, Case
+LevelHint2 = e.g. Bay, Section, Shelf, Drawer
+LevelHint3 = e.g. Shelf, Rack, Bin, Compartment
+LevelHint4 = e.g. Bin, Slot, Position, Divider
+LevelHint5 = e.g. Position, Sub-bin, Cell
+LevelHint6 = e.g. Slot, Sub-position
+
+#
+# Product locations
+#
+ProductLocation = Product Location
+LocationSaved = Location saved
+LocationRemoved = Location removed
+EditLocation = Edit
+RemoveLocation = Remove
+AddLocation = Add Location
+LocationNote = Note
+NoLocationsFound = No bin locations assigned yet
+StockWithoutLocation = Stock in warehouses without a bin location
+AssignedLocations = Assigned Locations
+AssignLocation = Assign Location
+AddToOtherWarehouse = Add to Other Warehouse
+MoBinAssignDesc = Assign bin locations for serials produced by this Manufacturing Order
+NoSerializedOutputFromMo = This MO has no serialized production output
+LotNotYetCreated = Lot record not yet created (MO production may not be complete)
+BinLocation = Bin Location
+SerialAlreadyLocated = This serial already has a bin location — edit or remove the existing one first
+SerialLocationCleared = Serial location cleared (stock moved out)
+
+#
+# Level datatype configuration
+#
+TypeText = Text
+TypeNumber = Number
+TypeList = Dropdown
+ListValues = Allowed Values
+ListValuesHint = comma-separated, used only for Dropdown type
+ListValuesPlaceholder = e.g. A, B, C, D
+
+#
+# Reception tab
+#
+BinPlacement = Bin Placement
+ReceptionBinPlacementDesc = Assign bin locations for the products being received on this reception
+NoReceptionLines = This reception has no lines
+FillDownHint = Fill this column down to empty cells
+ConfirmRemoveLocation = Remove the bin location for this product in warehouse %s?
+
+#
+# Warehouse tab
+#
+ProductsInWarehouse = Products in %s
+NoProductsWithStock = No products with stock in this warehouse
+ManageLevels = Manage Levels
+
+#
+# Bulk assign
+#
+BulkAssignDesc = Assign or update bin locations for all products with stock in a warehouse
+BulkSaveAll = Save All
+BulkSaved = %s location(s) saved
+BulkNothingChanged = No changes to save
+SearchProduct = Search by ref or label
+
+#
+# Permissions
+#
+Permission530101 = Read bin locations
+Permission530102 = Create/modify bin locations
+Permission530103 = Configure warehouse levels
+
+#
+# Settings
+#
+ClearOnZeroStock = Auto-clear location when stock drops to zero
+ClearOnZeroStockDesc = When enabled, a product's location in a warehouse is automatically removed when its stock drops to zero in that warehouse
+DebugMode = Debug Mode
+DebugModeDesc = Enable the debug diagnostics endpoint at /binloc/ajax/debug.php (admin only)
+
+#
+# Reception / dispatch integration
+#
+BinLocationHint = Bin location
+AssignBinLocation = Assign bin location
+NoBinLocationAssigned = No bin location assigned
+SetSelectedTo = Set selected products to

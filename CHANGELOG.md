@@ -1,44 +1,15 @@
 # Changelog
 
-## [2.1.2] - 2026-04-03
+## [1.6.0] - 2026-04-15
 
-### Fixed
-- Fix phpcs violations — docblocks, string concats, underscore-prefixed function renames
-
-## [2.1.1] - 2026-03-28
-
-### Fixed
-- Pre-compute AddLabel JS variable to prevent broken script block
-
-## [2.1.0] - 2026-03-28
+Initial published release of Binloc.
 
 ### Added
-- Per-node bulk-add children
-- Proper ORM for deactivate and rename
+- Per-warehouse location hierarchy — each warehouse defines its own level names (Row/Bay/Shelf/Bin, Case/Drawer/Bin, etc.)
+- Tabs on product, warehouse, manufacturing order, and reception cards for viewing and assigning locations
+- Bulk-assign page for setting locations across many products at once
+- Admin setup page for level-name configuration
 
-## [2.0.2] - 2026-03-28
+---
 
-### Fixed
-- New depth row inserted outside table — append to table body instead
-
-## [2.0.1] - 2026-03-28
-
-### Fixed
-- PHP parse error in admin/setup.php JS block — broken string context around dol_escape_js() call
-
-## [2.0.0] - 2026-03-28
-
-### Added
-- Native warehouse hierarchy tree builder (complete rewrite)
-
-## [1.2.0] - 2026-03-28
-
-### Added
-- Per-warehouse hierarchy overrides
-- AJAX level fields
-- Admin UX improvements
-
-## [1.1.0] - 2026-03-28
-
-### Added
-- Initial wareloc module — sub-warehouse product location tracking
+> **History note:** this repository previously hosted a different module called Wareloc (a warehouse-nesting tree builder, versions up to 2.1.2). That codebase was abandoned in favour of Binloc, a ground-up rewrite with a different architecture. The v2.1.3 release tagged against the old Wareloc code was a mistake and has been reverted. If you need the old Wareloc code, check out commit `06f5363`.

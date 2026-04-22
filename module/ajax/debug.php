@@ -3,19 +3,19 @@
 
 /**
  * \file    ajax/debug.php
- * \ingroup wareloc
- * \brief   Comprehensive debug diagnostics for the wareloc module.
- *          Gated by admin permission + WARELOC_DEBUG_MODE setting.
+ * \ingroup binloc
+ * \brief   Comprehensive debug diagnostics for the binloc module.
+ *          Gated by admin permission + BINLOC_DEBUG_MODE setting.
  *
  * Modes (via ?mode=):
  *   overview    — Module config, hook contexts, trigger registration, DB table health (default)
  *   object      — Deep inspect a single object (?mode=object&type=productlocation&id=11)
- *   links       — All element_element rows involving this module's types
- *   settings    — All WARELOC_* constants from llx_const
+ *   settings    — All BINLOC_* constants from llx_const
  *   classes     — Class loading + method availability for all module objects
  *   sql         — Run a read-only diagnostic query (?mode=sql&q=SELECT...)
  *   triggers    — List all registered triggers and check ours is loaded
  *   hooks       — Show registered hook contexts and verify our hooks fire
+ *   levels      — Show warehouse level configurations across all warehouses
  *   all         — Run every diagnostic at once
  */
 
@@ -26,9 +26,9 @@ if (!$res && file_exists("../../../../main.inc.php")) { $res = @include "../../.
 if (!$res) { http_response_code(500); exit; }
 
 if (!$user->admin) { http_response_code(403); print 'Admin only'; exit; }
-if (!getDolGlobalInt('WARELOC_DEBUG_MODE')) {
+if (!getDolGlobalInt('BINLOC_DEBUG_MODE')) {
 	http_response_code(403);
-	print 'Debug mode not enabled. Go to Wareloc > Setup and enable Debug Mode.';
+	print 'Debug mode not enabled. Set constant BINLOC_DEBUG_MODE = 1 in Setup > Other Setup.';
 	exit;
 }
 
@@ -37,26 +37,31 @@ header('Content-Type: text/plain; charset=utf-8');
 $mode = GETPOST('mode', 'alpha') ?: 'overview';
 $run_all = ($mode === 'all');
 
-$MODULE_NAME   = 'wareloc';
-$MODULE_UPPER  = 'WARELOC';
+$MODULE_NAME   = 'binloc';
+$MODULE_UPPER  = 'BINLOC';
 $OBJECTS = array(
+	'warehouselevel' => array(
+		'class'      => 'BinlocWarehouseLevel',
+		'classfile'  => 'binlocwarehouselevel',
+		'table'      => 'binloc_warehouse_levels',
+		'fk_fields'  => array('fk_entrepot'),
+	),
 	'productlocation' => array(
-		'class'      => 'ProductLocation',
-		'classfile'  => 'productlocation',
-		'table'      => 'wareloc_product_location',
-		'prefixed'   => 'wareloc_productlocation',
-		'fk_fields'  => array('fk_product', 'fk_entrepot', 'fk_reception'),
+		'class'      => 'BinlocProductLocation',
+		'classfile'  => 'binlocproductlocation',
+		'table'      => 'binloc_product_location',
+		'fk_fields'  => array('fk_product', 'fk_entrepot'),
 	),
 );
 
-print "=== WARELOC DEBUG DIAGNOSTICS ===\n";
+print "=== BINLOC DEBUG DIAGNOSTICS ===\n";
 print "Timestamp: ".date('Y-m-d H:i:s T')."\n";
 print "Dolibarr: ".(defined('DOL_VERSION') ? DOL_VERSION : 'unknown')."\n";
-print "Module version: ".getDolGlobalString('MAIN_MODULE_WARELOC_VERSION', 'unknown')."\n";
+print "DB prefix: ".MAIN_DB_PREFIX."\n";
 print "Mode: $mode\n";
-print "Usage: ?mode=overview|object|links|settings|classes|sql|triggers|hooks|all\n";
+print "Usage: ?mode=overview|object|settings|classes|sql|triggers|hooks|levels|all\n";
 print "       ?mode=object&type=productlocation&id=11\n";
-print "       ?mode=sql&q=SELECT+rowid,ref+FROM+llx_wareloc_product_location+LIMIT+5\n";
+print "       ?mode=sql&q=SELECT+rowid,fk_product+FROM+".MAIN_DB_PREFIX."binloc_product_location+LIMIT+5\n";
 print str_repeat('=', 60)."\n\n";
 
 
@@ -66,7 +71,6 @@ print str_repeat('=', 60)."\n\n";
 if ($mode === 'overview' || $run_all) {
 	print "--- MODULE STATUS ---\n";
 	print "isModEnabled('$MODULE_NAME'): ".(isModEnabled($MODULE_NAME) ? 'YES' : 'NO')."\n";
-	print "conf->$MODULE_NAME->enabled: ".(isset($conf->$MODULE_NAME->enabled) ? $conf->$MODULE_NAME->enabled : '(not set)')."\n";
 
 	print "\nRegistered module_parts:\n";
 	if (isset($conf->modules_parts)) {
@@ -87,49 +91,39 @@ if ($mode === 'overview' || $run_all) {
 	}
 
 	print "\n--- DATABASE TABLES ---\n";
-	$tables = array('wareloc_level', 'wareloc_product_location', 'wareloc_product_location_extrafields', 'wareloc_product_default');
+	$tables = array('binloc_warehouse_levels', 'binloc_product_location', 'binloc_level_options');
 	foreach ($tables as $tbl) {
 		$sql = "SELECT COUNT(*) as cnt FROM ".MAIN_DB_PREFIX.$tbl;
 		$resql = $db->query($sql);
 		if ($resql) {
 			$obj = $db->fetch_object($resql);
-			print "  llx_$tbl: ".$obj->cnt." rows\n";
+			print "  ".MAIN_DB_PREFIX."$tbl: ".$obj->cnt." rows\n";
 		} else {
-			print "  llx_$tbl: TABLE MISSING OR ERROR\n";
+			print "  ".MAIN_DB_PREFIX."$tbl: TABLE MISSING OR ERROR\n";
 		}
 	}
 
-	print "\n--- ELEMENT PROPERTIES ---\n";
-	foreach ($OBJECTS as $bare => $odef) {
-		foreach (array($bare, $odef['prefixed']) as $etype) {
-			$props = getElementProperties($etype);
-			$ok = (!empty($props['classname']) && $props['classname'] === $odef['class']);
-			$cn = isset($props['classname']) ? $props['classname'] : '(empty)';
-			print "  $etype → classname=$cn ".($ok ? 'OK' : 'MISMATCH (expected '.$odef['class'].')')."\n";
-		}
+	print "\n--- PERMISSIONS ---\n";
+	$perms = array('read', 'write', 'admin');
+	foreach ($perms as $p) {
+		print "  binloc.$p: ".($user->hasRight('binloc', $p) ? 'YES' : 'NO')."\n";
 	}
 
-	print "\n--- LINKED OBJECT TEMPLATES ---\n";
-	foreach ($OBJECTS as $bare => $odef) {
-		$tplpath = $MODULE_NAME.'/'.$bare.'/tpl/linkedobjectblock.tpl.php';
-		$fullpath = dol_buildpath('/'.$tplpath);
-		print "  $tplpath: ".(file_exists($fullpath) ? 'EXISTS' : 'MISSING ('.$fullpath.')')."\n";
-	}
-
-	print "\n--- HIERARCHY LEVELS ---\n";
-	dol_include_once('/wareloc/lib/wareloc.lib.php');
-	$levels = wareloc_get_active_levels();
-	if (empty($levels)) {
-		print "  (none configured)\n";
+	print "\n--- TAB REGISTRATION ---\n";
+	// Check if tabs are registered
+	$sql = "SELECT value FROM ".MAIN_DB_PREFIX."const WHERE name = 'MAIN_MODULE_BINLOC_TABS_0' AND entity IN (0, ".((int) $conf->entity).")";
+	$resql = $db->query($sql);
+	if ($resql && ($row = $db->fetch_object($resql))) {
+		print "  Product tab: $row->value\n";
 	} else {
-		foreach ($levels as $lev) {
-			print "  Position ".$lev->position.": ".$lev->label." (".$lev->datatype.")";
-			if ($lev->datatype === 'list') {
-				print " values=[".$lev->list_values."]";
-			}
-			print $lev->required ? " REQUIRED" : "";
-			print "\n";
-		}
+		print "  Product tab: (checking via conf)\n";
+	}
+
+	// Check for the tab files
+	$tab_files = array('tab_product_locations.php', 'tab_warehouse_locations.php', 'bulk_assign.php');
+	foreach ($tab_files as $tf) {
+		$fullpath = dol_buildpath('/'.$MODULE_NAME.'/'.$tf);
+		print "  $tf: ".(file_exists($fullpath) ? 'EXISTS' : 'MISSING ('.$fullpath.')')."\n";
 	}
 
 	print "\n";
@@ -144,7 +138,8 @@ if ($mode === 'object' || $run_all) {
 	$oid   = GETPOSTINT('id');
 
 	if ($oid <= 0 && !$run_all) {
-		print "--- OBJECT DIAGNOSIS ---\nUsage: ?mode=object&type=productlocation&id=11\n\n";
+		print "--- OBJECT DIAGNOSIS ---\nUsage: ?mode=object&type=productlocation&id=11\n";
+		print "       ?mode=object&type=warehouselevel&id=1\n\n";
 	} elseif ($oid > 0) {
 		$odef = isset($OBJECTS[$otype]) ? $OBJECTS[$otype] : null;
 		if (!$odef) {
@@ -162,50 +157,33 @@ if ($mode === 'object' || $run_all) {
 				print "  fetch() returned: $fetch_result\n";
 
 				if ($fetch_result > 0) {
-					print "  ref: $obj->ref\n";
 					print "  element: $obj->element\n";
-					print "  module: ".(property_exists($obj, 'module') ? ($obj->module ?: '(empty)') : '(NOT DEFINED)')."\n";
-					print "  getElementType(): ".$obj->getElementType()."\n";
-					print "  getNomUrl(): ".(method_exists($obj, 'getNomUrl') ? 'defined' : 'MISSING')."\n";
-					print "  getLibStatut(): ".(method_exists($obj, 'getLibStatut') ? 'defined' : 'MISSING')."\n";
+					print "  table_element: $obj->table_element\n";
 
-					print "\n  FK fields (non-empty):\n";
-					$has_fk = false;
+					print "\n  FK fields:\n";
 					foreach ($odef['fk_fields'] as $fk) {
 						$val = isset($obj->$fk) ? $obj->$fk : null;
-						if (!empty($val)) {
-							print "    $fk = $val\n";
-							$has_fk = true;
+						print "    $fk = ".($val !== null ? $val : 'NULL')."\n";
+					}
+
+					// For product locations, show level values
+					if ($otype === 'productlocation') {
+						print "\n  Level values:\n";
+						for ($i = 1; $i <= 6; $i++) {
+							$val = $obj->{'level'.$i.'_value'};
+							if ($val !== null && $val !== '') {
+								print "    level$i = $val\n";
+							}
 						}
-					}
-					if (!$has_fk) print "    (none populated)\n";
+						print "  note: ".($obj->note ?: '(empty)')."\n";
 
-					print "\n  Status: ".$obj->status."\n";
-					print "  Location: ".$obj->getLocationLabel()."\n";
-
-					// element_element
-					$etype = $obj->getElementType();
-					print "\n  element_element rows:\n";
-
-					$search_types = array($etype);
-					if ($etype !== $obj->element) {
-						$search_types[] = $obj->element;
-					}
-					$where_parts = array();
-					foreach ($search_types as $st) {
-						$where_parts[] = "(fk_source = $oid AND sourcetype = '".$db->escape($st)."')";
-						$where_parts[] = "(fk_target = $oid AND targettype = '".$db->escape($st)."')";
-					}
-
-					$sql = "SELECT DISTINCT rowid, fk_source, sourcetype, fk_target, targettype FROM ".MAIN_DB_PREFIX."element_element WHERE ".implode(" OR ", $where_parts)." ORDER BY rowid";
-					$resql = $db->query($sql);
-					if ($resql) {
-						$cnt = 0;
-						while ($row = $db->fetch_object($resql)) {
-							$cnt++;
-							print "    [$row->rowid] source=$row->fk_source ($row->sourcetype) → target=$row->fk_target ($row->targettype)\n";
+						// Show formatted location
+						dol_include_once('/'.$MODULE_NAME.'/class/'.$OBJECTS['warehouselevel']['classfile'].'.class.php');
+						$lvl = new BinlocWarehouseLevel($db);
+						$levels = $lvl->fetchByWarehouse($obj->fk_entrepot);
+						if (!empty($levels)) {
+							print "  formatted: ".$obj->getFormattedLocation($levels)."\n";
 						}
-						if ($cnt == 0) print "    (none found)\n";
 					}
 				}
 			}
@@ -216,43 +194,31 @@ if ($mode === 'object' || $run_all) {
 
 
 // =====================================================================
-// LINKS
+// SETTINGS
 // =====================================================================
-if ($mode === 'links' || $run_all) {
-	print "--- ALL ELEMENT_ELEMENT ROWS FOR $MODULE_UPPER ---\n";
+if ($mode === 'settings' || $run_all) {
+	print "--- BINLOC SETTINGS ---\n";
 
-	$type_patterns = array();
-	foreach ($OBJECTS as $bare => $odef) {
-		$type_patterns[] = "sourcetype LIKE '%".$db->escape($bare)."%'";
-		$type_patterns[] = "targettype LIKE '%".$db->escape($bare)."%'";
-	}
-
-	$sql = "SELECT rowid, fk_source, sourcetype, fk_target, targettype FROM ".MAIN_DB_PREFIX."element_element WHERE ".implode(" OR ", $type_patterns)." ORDER BY rowid DESC LIMIT 50";
+	$sql = "SELECT name, value, note FROM ".MAIN_DB_PREFIX."const WHERE name LIKE 'BINLOC%' AND entity IN (0, ".((int) $conf->entity).") ORDER BY name";
 	$resql = $db->query($sql);
 	if ($resql) {
 		$cnt = 0;
 		while ($row = $db->fetch_object($resql)) {
-			$cnt++;
-			print "  [$row->rowid] source=$row->fk_source ($row->sourcetype) → target=$row->fk_target ($row->targettype)\n";
-		}
-		print "  Total: $cnt rows (max 50 shown)\n";
-	}
-	print "\n";
-}
-
-
-// =====================================================================
-// SETTINGS
-// =====================================================================
-if ($mode === 'settings' || $run_all) {
-	print "--- WARELOC SETTINGS ---\n";
-
-	$sql = "SELECT name, value, note FROM ".MAIN_DB_PREFIX."const WHERE name LIKE 'WARELOC%' AND entity IN (0, ".((int) $conf->entity).") ORDER BY name";
-	$resql = $db->query($sql);
-	if ($resql) {
-		while ($row = $db->fetch_object($resql)) {
 			$display_val = strlen($row->value) > 80 ? substr($row->value, 0, 80).'...' : $row->value;
 			print "  $row->name = $display_val\n";
+			$cnt++;
+		}
+		if ($cnt == 0) print "  (no BINLOC_* constants found)\n";
+	}
+
+	// Also show MAIN_MODULE_BINLOC* constants
+	$sql = "SELECT name, value FROM ".MAIN_DB_PREFIX."const WHERE name LIKE 'MAIN_MODULE_BINLOC%' AND entity IN (0, ".((int) $conf->entity).") ORDER BY name";
+	$resql = $db->query($sql);
+	if ($resql) {
+		print "\n  Module registration constants:\n";
+		while ($row = $db->fetch_object($resql)) {
+			$display_val = strlen($row->value) > 80 ? substr($row->value, 0, 80).'...' : $row->value;
+			print "    $row->name = $display_val\n";
 		}
 	}
 	print "\n";
@@ -272,21 +238,26 @@ if ($mode === 'classes' || $run_all) {
 		print "    class_exists: ".(class_exists($odef['class']) ? 'YES' : 'NO')."\n";
 
 		if (class_exists($odef['class'])) {
-			$required_methods = array('create', 'fetch', 'update', 'delete', 'validate', 'getNomUrl', 'getLibStatut', 'getNextNumRef');
 			$obj = new $odef['class']($db);
-			print "    \$module property: ".(property_exists($obj, 'module') ? ($obj->module ?: '(empty)') : 'NOT DEFINED')."\n";
 			print "    \$element: ".$obj->element."\n";
-			print "    getElementType(): ".$obj->getElementType()."\n";
+			print "    \$table_element: ".$obj->table_element."\n";
 
-			$methods_ok = true;
+			// Check key methods
+			$methods_to_check = array('create', 'fetch', 'update', 'delete');
+			if ($bare === 'warehouselevel') {
+				$methods_to_check = array_merge($methods_to_check, array('fetchByWarehouse', 'saveWarehouseLevels', 'copyFromWarehouse', 'getMaxLevel'));
+			}
+			if ($bare === 'productlocation') {
+				$methods_to_check = array_merge($methods_to_check, array('fetchByProductWarehouse', 'fetchAllByProduct', 'fetchAllByWarehouse', 'createOrUpdate', 'getFormattedLocation', 'clearIfZeroStock'));
+			}
+
 			$missing = array();
-			foreach ($required_methods as $m) {
+			foreach ($methods_to_check as $m) {
 				if (!method_exists($obj, $m)) {
-					$methods_ok = false;
 					$missing[] = $m;
 				}
 			}
-			print "    Required methods: ".($methods_ok ? 'ALL PRESENT' : 'MISSING: '.implode(', ', $missing))."\n";
+			print "    Methods: ".(empty($missing) ? 'ALL PRESENT ('.count($methods_to_check).')' : 'MISSING: '.implode(', ', $missing))."\n";
 		}
 		print "\n";
 	}
@@ -301,12 +272,11 @@ if ($mode === 'sql') {
 	print "--- SQL QUERY ---\n";
 
 	if (empty($q)) {
-		print "Usage: ?mode=sql&q=SELECT+rowid,ref+FROM+llx_wareloc_product_location+LIMIT+5\n";
+		print "Usage: ?mode=sql&q=SELECT+rowid,fk_product+FROM+".MAIN_DB_PREFIX."binloc_product_location+LIMIT+5\n";
 		print "\nUseful queries:\n";
-		print "  ?mode=sql&q=SELECT rowid,ref,status FROM llx_wareloc_product_location ORDER BY rowid DESC LIMIT 10\n";
-		print "  ?mode=sql&q=SELECT rowid,position,code,label,datatype FROM llx_wareloc_level WHERE active=1 ORDER BY position\n";
-		print "  ?mode=sql&q=SELECT rowid,fk_product,fk_entrepot,level_1,level_2,level_3,level_4 FROM llx_wareloc_product_default ORDER BY rowid DESC LIMIT 10\n";
-		print "  ?mode=sql&q=SELECT rowid,fk_source,sourcetype,fk_target,targettype FROM llx_element_element WHERE sourcetype LIKE '%wareloc%' OR targettype LIKE '%wareloc%' ORDER BY rowid DESC LIMIT 20\n";
+		print "  ?mode=sql&q=SELECT rowid,fk_entrepot,level_num,label FROM ".MAIN_DB_PREFIX."binloc_warehouse_levels ORDER BY fk_entrepot,level_num\n";
+		print "  ?mode=sql&q=SELECT rowid,fk_product,fk_entrepot,level1_value,level2_value,level3_value,level4_value FROM ".MAIN_DB_PREFIX."binloc_product_location ORDER BY rowid DESC LIMIT 10\n";
+		print "  ?mode=sql&q=SELECT pl.rowid,p.ref,e.ref as warehouse,pl.level1_value,pl.level2_value,pl.level3_value,pl.level4_value FROM ".MAIN_DB_PREFIX."binloc_product_location pl LEFT JOIN ".MAIN_DB_PREFIX."product p ON p.rowid=pl.fk_product LEFT JOIN ".MAIN_DB_PREFIX."entrepot e ON e.rowid=pl.fk_entrepot LIMIT 10\n";
 	} else {
 		$q_trimmed = trim($q);
 		if (stripos($q_trimmed, 'SELECT') !== 0) {
@@ -369,25 +339,20 @@ if ($mode === 'triggers' || $run_all) {
 			if (preg_match('/^interface_.*\.class\.php$/', $f)) {
 				print "  Found trigger file: $f\n";
 				include_once $trigger_dir.'/'.$f;
-				$classname = str_replace('.class.php', '', $f);
-				print "    Class exists: ".(class_exists($classname) ? 'YES' : 'NO')."\n";
+				$classname = preg_replace('/\.class\.php$/', '', $f);
+				print "    Class '$classname' exists: ".(class_exists($classname) ? 'YES' : 'NO')."\n";
 			}
 		}
 	} else {
 		print "  Trigger directory not found: $trigger_dir\n";
+		// Try alternate path
+		$alt_dir = dol_buildpath('/'.$MODULE_NAME.'/core/triggers');
+		print "  Alternate path: $alt_dir ".(is_dir($alt_dir) ? '(EXISTS)' : '(NOT FOUND)')."\n";
 	}
 
-	$trigger_file = $trigger_dir.'/interface_99_modWareloc_WarelocTrigger.class.php';
-	if (file_exists($trigger_file)) {
-		$content = file_get_contents($trigger_file);
-		preg_match_all("/case\s+'([^']+)'/", $content, $matches);
-		if (!empty($matches[1])) {
-			print "\n  Events handled:\n";
-			foreach ($matches[1] as $event) {
-				print "    - $event\n";
-			}
-		}
-	}
+	print "\n  Expected trigger: InterfaceBinlocTrigger\n";
+	print "  Listens for: STOCK_MOVEMENT\n";
+	print "  BINLOC_CLEAR_ON_ZERO_STOCK: ".getDolGlobalInt('BINLOC_CLEAR_ON_ZERO_STOCK')."\n";
 	print "\n";
 }
 
@@ -398,41 +363,106 @@ if ($mode === 'triggers' || $run_all) {
 if ($mode === 'hooks' || $run_all) {
 	print "--- HOOK REGISTRATION ---\n";
 
-	$sql_hooks = "SELECT name, value FROM ".MAIN_DB_PREFIX."const WHERE name = 'MAIN_MODULE_WARELOC_HOOKS' AND entity IN (0, ".((int) $conf->entity).")";
-	$resql = $db->query($sql_hooks);
-	if ($resql && ($row = $db->fetch_object($resql))) {
-		print "  MAIN_MODULE_WARELOC_HOOKS = $row->value\n";
-	}
+	print "  Expected hook contexts: warehousecard, productcard, receptioncard, ordersupplierdispatch\n\n";
 
-	print "\n  Hook contexts from conf->modules_parts['hooks']:\n";
+	print "  Hook contexts from conf->modules_parts['hooks']:\n";
 	if (isset($conf->modules_parts['hooks'])) {
+		$found_any = false;
 		foreach ($conf->modules_parts['hooks'] as $context => $modules) {
 			if (is_array($modules)) {
 				foreach ($modules as $mod) {
 					if (stripos($mod, $MODULE_NAME) !== false) {
 						print "    context='$context' module='$mod'\n";
+						$found_any = true;
 					}
 				}
 			} elseif (stripos($modules, $MODULE_NAME) !== false) {
 				print "    context='$context' module='$modules'\n";
+				$found_any = true;
+			}
+		}
+		if (!$found_any) print "    (no $MODULE_NAME hooks found in modules_parts)\n";
+	} else {
+		print "    (modules_parts['hooks'] not set)\n";
+	}
+
+	print "\n  Actions class:\n";
+	$actions_file = dol_buildpath('/'.$MODULE_NAME.'/class/actions_'.$MODULE_NAME.'.class.php');
+	print "    File: $actions_file\n";
+	print "    Exists: ".(file_exists($actions_file) ? 'YES' : 'NO')."\n";
+	if (file_exists($actions_file)) {
+		include_once $actions_file;
+		$actions_class = 'ActionsBinloc';
+		print "    Class '$actions_class' exists: ".(class_exists($actions_class) ? 'YES' : 'NO')."\n";
+		if (class_exists($actions_class)) {
+			$hook_methods = array('formObjectOptions', 'formAddObjectLine', 'printFieldListValue', 'printFieldListTitle');
+			foreach ($hook_methods as $m) {
+				print "    method $m(): ".(method_exists($actions_class, $m) ? 'defined' : 'not defined')."\n";
 			}
 		}
 	}
 
-	print "\n  Actions class:\n";
-	$actions_file = DOL_DOCUMENT_ROOT.'/custom/'.$MODULE_NAME.'/class/actions_'.$MODULE_NAME.'.class.php';
-	print "    File exists: ".(file_exists($actions_file) ? 'YES' : 'NO')."\n";
-	if (file_exists($actions_file)) {
-		include_once $actions_file;
-		$actions_class = 'ActionsWareloc';
-		print "    Class exists: ".(class_exists($actions_class) ? 'YES' : 'NO')."\n";
-		if (class_exists($actions_class)) {
-			$methods = array('getElementProperties', 'formObjectOptions', 'showLinkToObjectBlock', 'doActions');
-			foreach ($methods as $m) {
-				print "    method $m(): ".(method_exists($actions_class, $m) ? 'defined' : 'MISSING')."\n";
+	print "\n  AJAX endpoint:\n";
+	$ajax_file = dol_buildpath('/'.$MODULE_NAME.'/ajax/assign_location.php');
+	print "    $ajax_file: ".(file_exists($ajax_file) ? 'EXISTS' : 'MISSING')."\n";
+	print "\n";
+}
+
+
+// =====================================================================
+// LEVELS — warehouse level configurations
+// =====================================================================
+if ($mode === 'levels' || $run_all) {
+	print "--- WAREHOUSE LEVEL CONFIGURATIONS ---\n";
+
+	$sql = "SELECT wl.fk_entrepot, e.ref as warehouse_ref, e.lieu,";
+	$sql .= " wl.level_num, wl.label, wl.active";
+	$sql .= " FROM ".MAIN_DB_PREFIX."binloc_warehouse_levels wl";
+	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."entrepot e ON e.rowid = wl.fk_entrepot";
+	$sql .= " WHERE wl.entity IN (".getEntity('stock').")";
+	$sql .= " ORDER BY wl.fk_entrepot, wl.level_num";
+
+	$resql = $db->query($sql);
+	if ($resql) {
+		$current_wh = 0;
+		$cnt = 0;
+		while ($row = $db->fetch_object($resql)) {
+			if ($row->fk_entrepot != $current_wh) {
+				if ($current_wh > 0) print "\n";
+				$current_wh = $row->fk_entrepot;
+				$wh_label = $row->warehouse_ref.($row->lieu ? ' ('.$row->lieu.')' : '');
+				print "  Warehouse #$current_wh: $wh_label\n";
 			}
+			$status = $row->active ? '' : ' [INACTIVE]';
+			print "    Level $row->level_num: $row->label$status\n";
+			$cnt++;
 		}
+		if ($cnt == 0) print "  (no level configurations found)\n";
+	} else {
+		print "  Query error (table may not exist): ".$db->lasterror()."\n";
 	}
+
+	// Also show location counts per warehouse
+	print "\n--- LOCATION RECORD COUNTS ---\n";
+	$sql = "SELECT pl.fk_entrepot, e.ref as warehouse_ref, COUNT(*) as cnt";
+	$sql .= " FROM ".MAIN_DB_PREFIX."binloc_product_location pl";
+	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."entrepot e ON e.rowid = pl.fk_entrepot";
+	$sql .= " WHERE pl.entity IN (".getEntity('stock').")";
+	$sql .= " GROUP BY pl.fk_entrepot, e.ref";
+	$sql .= " ORDER BY e.ref";
+
+	$resql = $db->query($sql);
+	if ($resql) {
+		$cnt = 0;
+		while ($row = $db->fetch_object($resql)) {
+			print "  $row->warehouse_ref: $row->cnt products with locations\n";
+			$cnt++;
+		}
+		if ($cnt == 0) print "  (no location records yet)\n";
+	} else {
+		print "  Query error: ".$db->lasterror()."\n";
+	}
+
 	print "\n";
 }
 
