@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.6.1] - 2026-04-22
+
+### Changed
+- Settings page uses Dolibarr's AJAX on/off switch (`ajax_constantonoff`) instead of form-submitted checkboxes — matches the toggle pattern used in the other modules. Values persist immediately; no Save button needed.
+
 ## [1.6.0] - 2026-04-15
 
 Initial published release of Binloc.
